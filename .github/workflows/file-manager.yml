@@ -1,0 +1,53 @@
+name: File Manager
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'لیست فایل‌ها (list) یا حذف (delete)'
+        required: true
+        default: 'list'
+        type: choice
+        options:
+          - list
+          - delete
+      file_to_delete:
+        description: 'برای حذف، نام دقیق فایل را وارد کنید (در صورت انتخاب action=delete)'
+        required: false
+        type: string
+
+jobs:
+  manage-files:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: List files in 'download' folder
+        if: github.event.inputs.action == 'list'
+        run: |
+          echo "لیست فایل‌های موجود در پوشه 'download':"
+          ls -la download/ || echo "پوشه 'download' یافت نشد یا خالی است."
+
+      - name: Delete file in 'download' folder
+        if: github.event.inputs.action == 'delete' && github.event.inputs.file_to_delete != ''
+        run: |
+          file_to_delete="${{ github.event.inputs.file_to_delete }}"
+          file_path="download/$file_to_delete"
+
+          if [ -f "$file_path" ]; then
+            echo "در حال حذف فایل: $file_path"
+            rm "$file_path"
+
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .
+            git commit -m "حذف فایل $file_to_delete از پوشه download توسط اکشن"
+            git push
+            echo "فایل $file_to_delete با موفقیت حذف و تغییرات اعمال شد."
+          else
+            echo "فایل $file_to_delete در پوشه 'download' یافت نشد."
+            exit 1
+          fi

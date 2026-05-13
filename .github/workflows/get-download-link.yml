@@ -1,0 +1,36 @@
+name: Get Direct Download Link
+
+on:
+  workflow_dispatch:
+    inputs:
+      filename:
+        description: 'نام دقیق فایل (مثلا: myfile.pdf)'
+        required: true
+        type: string
+
+jobs:
+  get-link:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check if file exists
+        id: check_file
+        run: |
+          if [ -f "download/${{ github.event.inputs.filename }}" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ فایل پیدا شد."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "❌ خطا: فایل 'download/${{ github.event.inputs.filename }}' وجود ندارد."
+            exit 1
+          fi
+
+      - name: Generate and display download link
+        if: steps.check_file.outputs.exists == 'true'
+        run: |
+          # ساخت لینک دانلود مستقیم با استفاده از متغیرهای داخلی گیت‌هاب
+          RAW_URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}/download/${{ github.event.inputs.filename }}"
+          echo "🔗 لینک مستقیم دانلود فایل شما:"
+          echo "$RAW_URL"
